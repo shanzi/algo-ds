@@ -15,6 +15,10 @@ type tMapHead struct {
 }
 
 func (self *tMapHead) Get(key string) (interface{}, bool) {
+	if self.root == nil {
+		return nil, false
+	}
+
 	if value, ok := self.getWithHash(self.root, key); ok {
 		return value, true
 	}
@@ -25,8 +29,13 @@ func (self *tMapHead) Get(key string) (interface{}, bool) {
 func (self *tMapHead) Put(key string, value interface{}) bool {
 	e := &entry{key: key, hash: 0, value: value}
 
+	if self.root == nil {
+		self.root = newNode(0, 0, 0)
+	}
+
 	if root, ok := self.putEntry(self.root, e, 0); ok {
 		self.root = root
+		self.size += 1
 		return true
 	}
 	return false
@@ -68,8 +77,8 @@ func (self *tMapHead) getWithHash(root *node, key string) (interface{}, bool) {
 		p = c.(*node)
 	}
 
-	// Nothing found after drained hash code, return current node but
-	// false indicating not found
+	// Nothing found after drained hash code,
+	// return false indicating not found
 	return nil, false
 }
 

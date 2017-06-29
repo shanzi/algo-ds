@@ -42,6 +42,7 @@ func (self *node) putChildAt(id uint64, index uint, child interface{}) *node {
 			for i := len(children) - 1; i > pos; i-- {
 				children[i] = children[i-1]
 			}
+			self.children = children
 		}
 		self.children[pos] = child
 		self.mask |= (1 << index)
