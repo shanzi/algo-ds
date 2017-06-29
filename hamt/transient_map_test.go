@@ -8,7 +8,7 @@ import (
 func TestPutAndGet(t *testing.T) {
 	tmap := &tMapHead{0, 0, nil}
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 		if !tmap.Put(key, value) {
@@ -19,7 +19,7 @@ func TestPutAndGet(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 
@@ -35,7 +35,7 @@ func TestGetNonExistKey(t *testing.T) {
 	tmap := &tMapHead{0, 0, nil}
 
 	// Empty map
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 
 		if v, ok := tmap.Get(key); ok || v != nil {
@@ -44,7 +44,7 @@ func TestGetNonExistKey(t *testing.T) {
 	}
 
 	// Fill in some items
-	for i := 0; i < 2048; i += 2 {
+	for i := 0; i < 4096; i += 2 {
 		key := fmt.Sprintf("key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 		if !tmap.Put(key, value) {
@@ -52,7 +52,7 @@ func TestGetNonExistKey(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 
@@ -78,7 +78,7 @@ func TestPutSameKeys(t *testing.T) {
 	tmap := &tMapHead{0, 0, nil}
 	count := 0
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		value := fmt.Sprintf("value-%d", i)
 		if !tmap.Put(key, value) {
@@ -87,7 +87,7 @@ func TestPutSameKeys(t *testing.T) {
 		count++
 	}
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < 4096; i++ {
 		key := fmt.Sprintf("key-%d", i)
 		if (i & 1) == 0 {
 			// For even numbers, put original object
@@ -110,7 +110,42 @@ func TestPutSameKeys(t *testing.T) {
 	}
 }
 
-func BenchmarkGetMethod(b *testing.B) {
+func TestRemove(t *testing.T) {
+	tmap := &tMapHead{0, 0, nil}
+
+	for i := 0; i < 4096; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		value := fmt.Sprintf("value-%d", i)
+		tmap.Put(key, value)
+	}
+
+	for i := 0; i < 4096; i++ {
+		key := fmt.Sprintf("key-%d", i)
+		value := fmt.Sprintf("value-%d", i)
+
+		if v, ok := tmap.Get(key); !ok {
+			t.Errorf("Should be able to get key %s before it has been removed\n", key)
+		} else if v != value {
+			t.Errorf("Expect value %s to be got with key %s before removed, but got %s\n", value, key, v)
+		}
+
+		if v, ok := tmap.Remove(key); !ok {
+			t.Errorf("Should be able to remove %s successfully\n", key)
+		} else if v != value {
+			t.Errorf("Expect value %s to be removed, but got %s\n", value, v)
+		}
+
+		if _, ok := tmap.Get(key); ok {
+			t.Errorf("Should not be able to get key %s after it has been removed\n", key)
+		}
+
+		if tmap.Size() != 4096-i-1 {
+			t.Errorf("Expect size to be %d, but got %d\n", 4096-i-1, tmap.Size())
+		}
+	}
+}
+
+func BenchmarkGet(b *testing.B) {
 	tmap := &tMapHead{0, 0, nil}
 	keys := make([]string, 4096)
 	value := "samevalue"
@@ -127,7 +162,7 @@ func BenchmarkGetMethod(b *testing.B) {
 	}
 }
 
-func BenchmarkPutMethod(b *testing.B) {
+func BenchmarkPut(b *testing.B) {
 	tmap := &tMapHead{0, 0, nil}
 	keys := make([]string, (1 << 20))
 	value := "samevalue"
@@ -139,5 +174,20 @@ func BenchmarkPutMethod(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := keys[i&((1<<16)-1)]
 		tmap.Put(key, value)
+	}
+}
+
+func BenchmarkRemove(b *testing.B) {
+	tmap := &tMapHead{0, 0, nil}
+	keys := make([]string, (1 << 20))
+	value := "samevalue"
+	for i := 0; i < (1 << 16); i++ {
+		keys[i] = fmt.Sprintf("key-%d", i)
+		tmap.Put(keys[i], value)
+	}
+
+	for i := 0; i < b.N; i++ {
+		key := keys[i&((1<<16)-1)]
+		tmap.Remove(key)
 	}
 }

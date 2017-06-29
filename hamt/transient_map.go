@@ -3,7 +3,7 @@ package hamt
 type TransientMap interface {
 	Get(key string) (interface{}, bool)
 	Put(key string, value interface{}) bool
-	Remove(key string) interface{}
+	Remove(key string) (interface{}, bool)
 	Map() Map
 	Size() int
 }
@@ -39,6 +39,20 @@ func (self *tMapHead) Put(key string, value interface{}) bool {
 		return true
 	}
 	return false
+}
+
+func (self *tMapHead) Remove(key string) (interface{}, bool) {
+	if self.root == nil {
+		return nil, false
+	}
+
+	if root, ent := self.removeEntry(self.root, key, 0, 0); ent != nil {
+		self.root = root
+		self.size -= 1
+		return ent.value, true
+	}
+
+	return nil, false
 }
 
 func (self *tMapHead) Size() int {
@@ -143,4 +157,60 @@ func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool) {
 
 	assert_unreachable()
 	return nil, false
+}
+
+func (self *tMapHead) removeEntry(root *node, key string, hash uint32, depth int) (*node, *entry) {
+	switch depth {
+	case 0:
+		hash = keyHash32(key, seed0)
+	case 6:
+		hash = keyHash32(key, seed1)
+	case 12:
+		hash = keyHash32(key, seed2)
+	}
+
+	d := uint(depth % 6)
+	h := uint((hash >> (d * 5)) & 0x1f)
+
+	if !root.has(h) {
+		// The item to remove not found, do nothing
+		return root, nil
+	}
+
+	child := root.childAt(h)
+	if subnode, ok := child.(*node); ok {
+		// Found a sub node, recursively remove entry
+		if child, ent := self.removeEntry(subnode, key, hash, depth+1); ent != nil {
+			switch child.size() {
+			case 0:
+				// child no longer contains anything, remove it from root
+				return root.removeChildAt(self.id, h), ent
+			case 1:
+				if e, ok := child.children[0].(*entry); ok {
+					// child only contains one entry, retrieve it and put it to the root
+					// as to reduce height of the trie
+					e.hash = hash
+					return root.putChildAt(self.id, h, e), ent
+				}
+				// Although child only contains one item, but it's a node.
+				// We choose not to compact the tree in this case as it'll be complex
+				// and may increase time cost per remove operation
+				fallthrough
+			default:
+				return root.putChildAt(self.id, h, child), ent
+			}
+
+		} else {
+			// entry not found, do noting
+			return root, nil
+		}
+	}
+
+	if ent, ok := child.(*entry); ok {
+		// Found the entry to remove. Remove it and return the removed entry
+		return root.removeChildAt(self.id, h), ent
+	}
+
+	assert_unreachable()
+	return nil, nil
 }
