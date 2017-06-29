@@ -3,7 +3,7 @@ package hamt
 import "unsafe"
 
 // Murmur3 32-bit version
-func Sum32(data []byte, seed uint32) uint32 {
+func sum32(data []byte, seed uint32) uint32 {
 
 	var h1 = seed
 
@@ -56,5 +56,9 @@ func Sum32(data []byte, seed uint32) uint32 {
 
 func keyHash32(s string, seed uint32) uint32 {
 	b := ([]byte)(s)
-	return sum32(b, seed)
+	h := sum32(b, seed)
+
+	// The most significant two bits will be abandoned during insert and lookup,
+	// Thus we'd better mix them down with the least significant two bits
+	return ((h >> 30) & 3) ^ h
 }

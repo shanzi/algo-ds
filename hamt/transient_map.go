@@ -15,36 +15,39 @@ type tMapHead struct {
 }
 
 func (self *tMapHead) Get(key string) (interface{}, bool) {
-	var p interface{}
-
-	// Round 0
-	if p, ok = getWithHash(self.root, key, keyHash32(key, seed0)); ok || p == nil {
-		return p, ok
+	if value, ok := self.getWithHash(self.root, key); ok {
+		return value, true
 	}
 
-	// Hash0 drained, still have conflict, perform round 1
-	if p, ok = getWithHash(p.(*node), key, keyHash32(key, seed1)); ok || p == nil {
-		return p, ok
-	}
-
-	// Hash1 drained, still have conflict, perform round 2
-	if p, ok = getWithHash(p.(*node), key, keyHash32(key, seed2)); ok || p == nil {
-		return p, ok
-	}
-
-	// All inserted item must be within 3 rounds of getting.
-	assert_unreachable()
+	return nil, false
 }
 
 func (self *tMapHead) Put(key string, value interface{}) bool {
-	p := self.root
-	e := &entry{key, value}
+	e := &entry{key: key, hash: 0, value: value}
+
+	if root, ok := self.putEntry(self.root, e, 0); ok {
+		self.root = root
+		return true
+	}
+	return false
 }
 
-func (self *tMapHead) getWithHash(root *node, key string, hash uint32) (interface{}, bool) {
+func (self *tMapHead) getWithHash(root *node, key string) (interface{}, bool) {
 	p := root
-	for i := 0; i < 32; i += 5 {
-		h := (hash >> i) & 0x1f
+	var hash uint32
+	for i := 0; i < 18; i++ {
+		// At some specific depth, hash need to be recalculate
+		switch i {
+		case 0:
+			hash = keyHash32(key, seed0)
+		case 6:
+			hash = keyHash32(key, seed1)
+		case 12:
+			hash = keyHash32(key, seed2)
+		}
+
+		d := uint(i % 6)
+		h := uint((hash >> (d * 5)) & 0x1f)
 
 		c := p.childAt(h)
 		if c == nil {
@@ -67,15 +70,64 @@ func (self *tMapHead) getWithHash(root *node, key string, hash uint32) (interfac
 
 	// Nothing found after drained hash code, return current node but
 	// false indicating not found
-	return p, false
+	return nil, false
 }
 
-func (self *tMapHead) putWithHash(root *node, e *entry, depth int) *node {
-	d := depth & 0x1f
-	h := (hash >> d) & 0x1f
+func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool) {
+	// At some specific depth, hash need to be recalculate
+	switch depth {
+	case 0:
+		e.hash = keyHash32(e.key, seed0)
+	case 6:
+		e.hash = keyHash32(e.key, seed1)
+	case 12:
+		e.hash = keyHash32(e.key, seed2)
+	case 18:
+		panic("Inresolvable hash collision!")
+	}
+
+	d := uint(depth % 6)
+	h := uint((e.hash >> (d * 5)) & 0x1f)
 
 	if !root.has(h) {
-		// found a position to put new item in
-
+		// Found a position to put new item in
+		return root.putChildAt(self.id, h, e), true
 	}
+
+	child := root.childAt(h)
+	if subnode, ok := child.(*node); ok {
+		// Found a sub node, recursively put entry
+		if child, ok = self.putEntry(subnode, e, depth+1); ok {
+			return root.putChildAt(self.id, h, child), true
+		} else {
+			return root, false
+		}
+	}
+
+	if olde, ok := child.(*entry); ok {
+		// Found an entry
+		if olde.key != e.key {
+			// Collision. Create a new node and rehash current entry
+			subnode := newNode(self.id, 0, 0)
+			subnode, _ = self.putEntry(subnode, olde, depth+1)
+
+			if child, ok = self.putEntry(subnode, e, depth+1); ok {
+				return root.putChildAt(self.id, h, child), true
+			} else {
+				return root, false
+			}
+		}
+
+		// Two keys are the same
+		if olde.value == e.value {
+			// Two values are the same, do nothing and return
+			return root, false
+		} else {
+			// Two values are different, overwrite value
+			return root.putChildAt(self.id, h, e), true
+		}
+	}
+
+	assert_unreachable()
+	return nil, false
 }
