@@ -30,7 +30,7 @@ func (self *tMapHead) Put(key string, value interface{}) bool {
 	e := &entry{key: key, hash: 0, value: value}
 
 	if self.root == nil {
-		self.root = newNode(0, 0, 0)
+		self.root = newNode(self.id, 0, 1)
 	}
 
 	if root, ok := self.putEntry(self.root, e, 0); ok {
@@ -53,6 +53,12 @@ func (self *tMapHead) Remove(key string) (interface{}, bool) {
 	}
 
 	return nil, false
+}
+
+func (self *tMapHead) Map() Map {
+	m := (*mapHead)(self)
+	m.id = 0
+	return m
 }
 
 func (self *tMapHead) Size() int {

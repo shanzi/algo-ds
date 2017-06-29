@@ -70,7 +70,7 @@ func (self *node) putChildAt(id uint64, index uint, child interface{}) *node {
 		for i := pos; i < len(self.children); i++ {
 			cloned.children[i+1] = self.children[i]
 		}
-		return self
+		return cloned
 	}
 }
 
