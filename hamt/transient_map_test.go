@@ -14,6 +14,9 @@ func TestPutAndGet(t *testing.T) {
 		if !tmap.Put(key, value) {
 			t.Errorf("Should put %s successfully\n", key)
 		}
+		if tmap.Size() != i+1 {
+			t.Errorf("Expect size to be %d, but got %d\n", i+1, tmap.Size())
+		}
 	}
 
 	for i := 0; i < 2048; i++ {
@@ -73,6 +76,7 @@ func TestGetNonExistKey(t *testing.T) {
 
 func TestPutSameKeys(t *testing.T) {
 	tmap := &tMapHead{0, 0, nil}
+	count := 0
 
 	for i := 0; i < 2048; i++ {
 		key := fmt.Sprintf("key-%d", i)
@@ -80,6 +84,7 @@ func TestPutSameKeys(t *testing.T) {
 		if !tmap.Put(key, value) {
 			t.Errorf("Should put %s successfully\n", key)
 		}
+		count++
 	}
 
 	for i := 0; i < 2048; i++ {
@@ -96,6 +101,11 @@ func TestPutSameKeys(t *testing.T) {
 			if !tmap.Put(key, value) {
 				t.Errorf("Key %s with value %s should be put ok\n", key, value)
 			}
+			count++
+		}
+
+		if tmap.Size() != count {
+			t.Errorf("Expect size to be %d, but got %d\n", count, tmap.Size())
 		}
 	}
 }

@@ -41,6 +41,10 @@ func (self *tMapHead) Put(key string, value interface{}) bool {
 	return false
 }
 
+func (self *tMapHead) Size() int {
+	return self.size
+}
+
 func (self *tMapHead) getWithHash(root *node, key string) (interface{}, bool) {
 	p := root
 	var hash uint32
