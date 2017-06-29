@@ -5,7 +5,7 @@ type TransientList interface {
 	Set(n int, value interface{}) bool
 	PushBack(value interface{})
 	RemoveBack() interface{}
-	Persist() List
+	List() List
 	Len() int
 }
 
@@ -121,7 +121,7 @@ func (head *tListHead) RemoveBack() interface{} {
 	return value
 }
 
-func (head *tListHead) Persist() List {
+func (head *tListHead) List() List {
 	perisitHead := (*listHead)(head)
 	perisitHead.id = 0
 	return perisitHead

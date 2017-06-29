@@ -25,7 +25,7 @@ func (head *listHead) Get(n int) (interface{}, bool) {
 func (head *listHead) Set(n int, value interface{}) (List, bool) {
 	t := head.TransientList()
 	if t.Set(n, value) {
-		return t.Persist(), true
+		return t.List(), true
 	} else {
 		return head, false
 	}
@@ -34,7 +34,7 @@ func (head *listHead) Set(n int, value interface{}) (List, bool) {
 func (head *listHead) PushBack(value interface{}) List {
 	t := head.TransientList()
 	t.PushBack(value)
-	return t.Persist()
+	return t.List()
 }
 
 func (head *listHead) RemoveBack() (List, interface{}) {
@@ -44,7 +44,7 @@ func (head *listHead) RemoveBack() (List, interface{}) {
 	} else {
 		t := head.TransientList()
 		value := t.RemoveBack()
-		return t.Persist(), value
+		return t.List(), value
 	}
 }
 

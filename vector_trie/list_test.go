@@ -3,7 +3,7 @@ package vector_trie
 import "testing"
 
 func TestListGet(t *testing.T) {
-	list := generateList(0, 1000, 1).Persist()
+	list := generateList(0, 1000, 1).List()
 
 	for i := 0; i < 1000; i++ {
 		if n, _ := list.Get(i); n != i {
@@ -13,7 +13,7 @@ func TestListGet(t *testing.T) {
 }
 
 func TestListSet(t *testing.T) {
-	list := generateList(0, 1000, 1).Persist()
+	list := generateList(0, 1000, 1).List()
 
 	for i := 0; i < 1000; i++ {
 		nlist, ok := list.Set(i, i*2+1)
@@ -63,7 +63,7 @@ func TestListPushBack(t *testing.T) {
 }
 
 func TestListRemoveBack(t *testing.T) {
-	oldlist := generateList(0, 1000, 1).Persist()
+	oldlist := generateList(0, 1000, 1).List()
 	for i := 999; i >= 0; i-- {
 		newlist, value := oldlist.RemoveBack()
 
