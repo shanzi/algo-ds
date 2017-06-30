@@ -7,13 +7,12 @@ import (
 
 type digest32 struct {
 	len  int
-	seed uint32
 	hash uint32
 	tail []byte
 }
 
-func New32(seed uint32) hash.Hash32 {
-	return &digest32{0, seed, seed, nil}
+func New32() hash.Hash32 {
+	return &digest32{0, 0, nil}
 }
 
 func (self *digest32) Size() int {
@@ -26,8 +25,8 @@ func (self *digest32) BlockSize() int {
 
 func (self *digest32) Reset() {
 	self.len = 0
+	self.hash = 0
 	self.tail = nil
-	self.hash = self.seed
 }
 
 func (self *digest32) Write(b []byte) (n int, err error) {

@@ -10,3 +10,12 @@ const (
 	r1_32 uint   = 15
 	r2_32 uint   = 13
 )
+
+const (
+	c1_128 uint64 = 0x87c37b91114253d5
+	c2_128 uint64 = 0x4cf5ad432745937f
+	c3_128 uint64 = 0xff51afd7ed558ccd
+	c4_128 uint64 = 0xc4ceb9fe1a85ec53
+	c5_128 uint64 = 0x52dce729
+	c6_128 uint64 = 0x38495ab5
+)

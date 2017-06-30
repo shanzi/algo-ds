@@ -2,7 +2,7 @@ package murmur3
 
 import "testing"
 
-var test_cases = []string{
+var test_cases_32 = []string{
 	"",
 	"hello",
 	"hello, world",
@@ -10,16 +10,10 @@ var test_cases = []string{
 	"The quick brown fox jumps over the lazy dog.",
 }
 
-var test_seeds = []uint32{
-	0x2bfab2f3,
-	0xabeabfa7,
-	0xffabbcc3,
-}
-
 func TestMurmur32(t *testing.T) {
-	digest := New32(0)
+	digest := New32()
 
-	for _, s := range test_cases {
+	for _, s := range test_cases_32 {
 		data := []byte(s)
 
 		digest.Reset()
@@ -34,11 +28,11 @@ func TestMurmur32(t *testing.T) {
 	}
 }
 
-func TestMurmur32Partial(t *testing.T) {
-	digest := New32(0)
+func TestMurmur32Incremental(t *testing.T) {
+	digest := New32()
 
 	data := []byte{}
-	for _, s := range test_cases {
+	for _, s := range test_cases_32 {
 		pdata := []byte(s)
 		data = append(data, pdata...)
 
@@ -49,47 +43,6 @@ func TestMurmur32Partial(t *testing.T) {
 
 		if hash != chash {
 			t.Errorf("Expect hash value to be %x, got %x", chash, hash)
-		}
-	}
-}
-
-func TestMurmur32Seed(t *testing.T) {
-	for _, seed := range test_seeds {
-		digest := New32(seed)
-
-		for _, s := range test_cases {
-			data := []byte(s)
-
-			digest.Reset()
-			digest.Write(data)
-
-			hash := digest.Sum32()
-			chash := Sum32(data, seed)
-
-			if hash != chash {
-				t.Errorf("Expect hash value to be %x, got %x", chash, hash)
-			}
-		}
-	}
-}
-
-func TestMurmur32SeedPartial(t *testing.T) {
-	for _, seed := range test_seeds {
-		digest := New32(seed)
-
-		data := []byte{}
-		for _, s := range test_cases {
-			pdata := []byte(s)
-			data = append(data, pdata...)
-
-			digest.Write(pdata)
-
-			hash := digest.Sum32()
-			chash := Sum32(data, seed)
-
-			if hash != chash {
-				t.Errorf("Expect hash value to be %x, got %x", chash, hash)
-			}
 		}
 	}
 }
