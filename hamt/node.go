@@ -62,15 +62,22 @@ func (self *node) putChildAt(id uint64, index uint, child interface{}) *node {
 		return self
 	} else {
 		// Not within the same transaction, copy the node
-		cloned := newNode(id, self.mask|(1<<index), len(self.children)+1)
-		for i := 0; i < pos; i++ {
-			cloned.children[i] = self.children[i]
+		if self.has(index) {
+			cloned := newNode(id, self.mask, len(self.children))
+			copy(cloned.children, self.children)
+			cloned.children[pos] = child
+			return cloned
+		} else {
+			cloned := newNode(id, self.mask|(1<<index), len(self.children)+1)
+			for i := 0; i < pos; i++ {
+				cloned.children[i] = self.children[i]
+			}
+			cloned.children[pos] = child
+			for i := pos; i < len(self.children); i++ {
+				cloned.children[i+1] = self.children[i]
+			}
+			return cloned
 		}
-		cloned.children[pos] = child
-		for i := pos; i < len(self.children); i++ {
-			cloned.children[i+1] = self.children[i]
-		}
-		return cloned
 	}
 }
 

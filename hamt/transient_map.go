@@ -33,9 +33,11 @@ func (self *tMapHead) Put(key string, value interface{}) bool {
 		self.root = newNode(self.id, 0, 1)
 	}
 
-	if root, ok := self.putEntry(self.root, e, 0); ok {
+	if root, newkey, ok := self.putEntry(self.root, e, 0); ok {
 		self.root = root
-		self.size += 1
+		if newkey {
+			self.size += 1
+		}
 		return true
 	}
 	return false
@@ -106,7 +108,8 @@ func (self *tMapHead) getWithHash(root *node, key string) (interface{}, bool) {
 	return nil, false
 }
 
-func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool) {
+func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool, bool) {
+	var newkey bool
 	// At some specific depth, hash need to be recalculate
 	switch depth {
 	case 0:
@@ -124,16 +127,16 @@ func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool) {
 
 	if !root.has(h) {
 		// Found a position to put new item in
-		return root.putChildAt(self.id, h, e), true
+		return root.putChildAt(self.id, h, e), true, true
 	}
 
 	child := root.childAt(h)
 	if subnode, ok := child.(*node); ok {
 		// Found a sub node, recursively put entry
-		if child, ok = self.putEntry(subnode, e, depth+1); ok {
-			return root.putChildAt(self.id, h, child), true
+		if child, newkey, ok = self.putEntry(subnode, e, depth+1); ok {
+			return root.putChildAt(self.id, h, child), newkey, ok
 		} else {
-			return root, false
+			return root, false, false
 		}
 	}
 
@@ -142,27 +145,27 @@ func (self *tMapHead) putEntry(root *node, e *entry, depth int) (*node, bool) {
 		if olde.key != e.key {
 			// Collision. Create a new node and rehash current entry
 			subnode := newNode(self.id, 0, 0)
-			subnode, _ = self.putEntry(subnode, olde, depth+1)
+			subnode, _, _ = self.putEntry(subnode, olde, depth+1)
 
-			if child, ok = self.putEntry(subnode, e, depth+1); ok {
-				return root.putChildAt(self.id, h, child), true
+			if child, newkey, ok = self.putEntry(subnode, e, depth+1); ok {
+				return root.putChildAt(self.id, h, child), newkey, ok
 			} else {
-				return root, false
+				return root, false, false
 			}
 		}
 
 		// Two keys are the same
 		if olde.value == e.value {
 			// Two values are the same, do nothing and return
-			return root, false
+			return root, false, false
 		} else {
 			// Two values are different, overwrite value
-			return root.putChildAt(self.id, h, e), true
+			return root.putChildAt(self.id, h, e), false, true
 		}
 	}
 
 	assert_unreachable()
-	return nil, false
+	return nil, false, false
 }
 
 func (self *tMapHead) removeEntry(root *node, key string, hash uint32, depth int) (*node, *entry) {
